@@ -1,0 +1,1 @@
+# AI-Powered-Smart-Tourist-Safety-Monitoring-and-Predective-Incident-Responsive-System
