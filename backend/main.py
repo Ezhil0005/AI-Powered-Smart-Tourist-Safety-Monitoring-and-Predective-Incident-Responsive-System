@@ -19,6 +19,7 @@ from app.api.tourist import router as tourist_router
 from app.api.trip import router as trip_router
 from app.api.alert import router as alert_router
 from app.api.health import router as health_router
+from app.api.ai import router as ai_router
 
 
 app = FastAPI(
@@ -33,3 +34,4 @@ app.include_router(tourist_router)
 app.include_router(trip_router)
 app.include_router(alert_router)
 app.include_router(health_router)
+app.include_router(ai_router)

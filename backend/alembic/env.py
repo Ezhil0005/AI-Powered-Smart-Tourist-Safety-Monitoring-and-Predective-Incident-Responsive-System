@@ -9,6 +9,7 @@ from alembic import context
 
 from app.db.database import Base
 
+# Import all models so SQLAlchemy registers every table and relationship
 import app.models.user
 import app.models.tourist
 import app.models.emergency_contact
@@ -22,7 +23,7 @@ import app.models.safety_score
 import app.models.notification
 
 
-# Load .env
+# Load environment variables from .env
 load_dotenv()
 
 # Alembic Config object
@@ -32,7 +33,10 @@ config = context.config
 database_url = os.getenv("DATABASE_URL")
 
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+    config.set_main_option(
+        "sqlalchemy.url",
+        database_url.replace("%", "%%"),
+    )
 
 
 # Configure logging
