@@ -13,6 +13,7 @@ from app.db.database import Base
 import app.models.user
 import app.models.tourist
 import app.models.emergency_contact
+import app.models.password_reset_token
 import app.models.trip
 import app.models.tourist_location
 import app.models.geofence_zone
