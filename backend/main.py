@@ -21,7 +21,7 @@ from app.api.alert import router as alert_router
 from app.api.health import router as health_router
 from app.api.ai import router as ai_router
 from app.api.tourist_location import router as tourist_location_router
-
+from app.api.geofence import router as geofence_router
 
 app = FastAPI(
     title="Tourist Safety API",
@@ -37,3 +37,4 @@ app.include_router(alert_router)
 app.include_router(health_router)
 app.include_router(ai_router)
 app.include_router(tourist_location_router)
+app.include_router(geofence_router)
