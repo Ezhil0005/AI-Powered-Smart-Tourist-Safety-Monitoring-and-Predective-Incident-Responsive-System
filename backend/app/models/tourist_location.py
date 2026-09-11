@@ -14,13 +14,42 @@ class TouristLocation(Base):
         Integer,
         ForeignKey("tourists.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
+    )
+
+    trip_id = Column(
+        Integer,
+        ForeignKey("trips.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     latitude = Column(Double, nullable=False)
     longitude = Column(Double, nullable=False)
+
     accuracy = Column(Double)
+    speed = Column(Double)
+    heading = Column(Double)
 
-    recorded_at = Column(DateTime, nullable=False, server_default=func.now())
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    recorded_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
 
-    tourist = relationship("Tourist", back_populates="locations")
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    tourist = relationship(
+        "Tourist",
+        back_populates="locations",
+    )
+
+    trip = relationship(
+        "Trip",
+        back_populates="locations",
+    )

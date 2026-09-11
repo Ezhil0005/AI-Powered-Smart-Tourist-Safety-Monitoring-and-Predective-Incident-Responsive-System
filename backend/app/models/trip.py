@@ -2,6 +2,7 @@ from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
+
 from app.db.base import Base
 
 
@@ -29,4 +30,13 @@ class Trip(Base):
         onupdate=func.now(),
     )
 
-    tourist = relationship("Tourist", back_populates="trips")
+    tourist = relationship(
+        "Tourist",
+        back_populates="trips",
+    )
+
+    locations = relationship(
+        "TouristLocation",
+        back_populates="trip",
+        cascade="all, delete-orphan",
+    )
