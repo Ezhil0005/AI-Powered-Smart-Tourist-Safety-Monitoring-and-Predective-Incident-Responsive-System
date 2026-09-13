@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password, verify_password
 from app.models.password_reset_token import PasswordResetToken
+from app.models.tourist import Tourist
 from app.models.user import User
+
+
 def get_user_by_email(db: Session, email: str):
     return db.query(User).filter(User.email == email.lower()).first()
 
@@ -31,6 +34,15 @@ def create_user(
     )
 
     db.add(user)
+    db.flush()
+
+    if role == "tourist":
+        tourist = Tourist(
+            user_id=user.id,
+            emergency_mode=False,
+        )
+        db.add(tourist)
+
     db.commit()
     db.refresh(user)
 
@@ -86,14 +98,21 @@ def change_password(
 
     return True
 
-def create_password_reset_token(db: Session, user: User):
+
+def create_password_reset_token(
+    db: Session,
+    user: User,
+):
     raw_token = secrets.token_urlsafe(32)
 
     token_hash = hashlib.sha256(
         raw_token.encode()
     ).hexdigest()
 
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    expires_at = (
+        datetime.now(timezone.utc)
+        + timedelta(minutes=15)
+    )
 
     reset_token = PasswordResetToken(
         user_id=user.id,
@@ -107,6 +126,7 @@ def create_password_reset_token(db: Session, user: User):
     db.refresh(reset_token)
 
     return raw_token
+
 
 def reset_password_with_token(
     db: Session,
@@ -134,14 +154,18 @@ def reset_password_with_token(
     if reset_token.expires_at <= now:
         return False
 
-    user = db.query(User).filter(
-        User.id == reset_token.user_id
-    ).first()
+    user = (
+        db.query(User)
+        .filter(User.id == reset_token.user_id)
+        .first()
+    )
 
     if not user or not user.is_active:
         return False
 
-    user.password_hash = hash_password(new_password)
+    user.password_hash = hash_password(
+        new_password
+    )
 
     reset_token.used = True
 
