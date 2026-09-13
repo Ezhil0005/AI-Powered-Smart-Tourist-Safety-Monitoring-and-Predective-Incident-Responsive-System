@@ -1,8 +1,10 @@
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
 from app.db.session import get_db
+from app.models.alert import Alert
 from app.models.tourist import Tourist
 from app.models.user import User
 from app.schemas.tourist_location import (
@@ -10,6 +12,7 @@ from app.schemas.tourist_location import (
     LocationHistoryResponse,
     LocationResponse,
 )
+from app.services.geofence_service import check_geofences
 from app.services.tourist_location_service import (
     create_location,
     get_latest_location,
@@ -52,10 +55,7 @@ def update_location(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    tourist = get_current_tourist(
-        current_user=current_user,
-        db=db,
-    )
+    tourist = get_current_tourist(current_user, db)
 
     trip = get_trip_for_tourist(
         db=db,
@@ -75,7 +75,7 @@ def update_location(
             detail="GPS updates are allowed only for active or paused trips",
         )
 
-    return create_location(
+    location = create_location(
         db=db,
         tourist_id=tourist.id,
         trip_id=data.trip_id,
@@ -85,6 +85,58 @@ def update_location(
         speed=data.speed,
         heading=data.heading,
     )
+
+    matched_zones = check_geofences(
+        db=db,
+        latitude=data.latitude,
+        longitude=data.longitude,
+    )
+
+    severity_map = {
+        "restricted": "critical",
+        "danger": "high",
+        "caution": "medium",
+    }
+
+    for zone in matched_zones:
+        zone_type = zone["zone_type"].lower()
+
+        if zone_type not in severity_map:
+            continue
+
+        existing_alert = (
+            db.query(Alert)
+            .filter(
+                Alert.tourist_id == tourist.id,
+                Alert.geofence_id == zone["geofence_id"],
+                Alert.status == "active",
+            )
+            .first()
+        )
+
+        if existing_alert:
+            continue
+
+        alert = Alert(
+            tourist_id=tourist.id,
+            geofence_id=zone["geofence_id"],
+            alert_type="geofence_entry",
+            severity=severity_map[zone_type],
+            message=(
+                f"You have entered the {zone_type} zone "
+                f"'{zone['name']}'. "
+                f"Distance from center: "
+                f"{zone['distance_meters']:.0f} meters."
+            ),
+            status="active",
+        )
+
+        db.add(alert)
+
+    db.commit()
+    db.refresh(location)
+
+    return location
 
 
 @router.get(
@@ -98,6 +150,12 @@ def latest_location(
     tourist = get_current_tourist(
         current_user=current_user,
         db=db,
+    )
+
+    location = (
+        db.query(type(location))
+        if False
+        else None
     )
 
     location = get_latest_location(
