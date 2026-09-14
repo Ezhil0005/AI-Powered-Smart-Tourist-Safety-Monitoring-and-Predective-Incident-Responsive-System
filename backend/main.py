@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # Import all models so SQLAlchemy registers every relationship
 import app.models.user
@@ -26,11 +27,23 @@ from app.api.sos import router as sos_router
 from app.api.emergency_contact import router as emergency_contact_router
 from app.api.notification import router as notification_router
 
+
 app = FastAPI(
     title="Tourist Safety API",
-    version="0.1.0",
-    description="Backend foundation for the Tourist Safety System.",
+    version="1.0.0",
+    description="AI-Powered Smart Tourist Safety Monitoring API",
 )
+
+
+# Development CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Register API routers
 app.include_router(auth_router)
@@ -44,4 +57,3 @@ app.include_router(geofence_router)
 app.include_router(sos_router)
 app.include_router(emergency_contact_router)
 app.include_router(notification_router)
-
