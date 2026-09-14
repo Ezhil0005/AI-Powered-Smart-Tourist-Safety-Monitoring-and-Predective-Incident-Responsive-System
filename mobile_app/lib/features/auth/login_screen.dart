@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
@@ -43,15 +45,32 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    await Future.delayed(
-      const Duration(seconds: 1),
-    );
+    try {
+      await AuthService.instance.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to connect to the server')),
+      );
+    }
 
     if (!mounted) return;
 
     setState(() {
       _isLoading = false;
     });
+
+    if (!AuthService.instance.isLoggedIn) {
+      return;
+    }
 
     Navigator.pushReplacement(
       context,

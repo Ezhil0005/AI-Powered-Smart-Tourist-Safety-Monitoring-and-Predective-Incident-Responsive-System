@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../auth/login_screen.dart';
 import '../../shared/widgets/app_app_bar.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_card.dart';
@@ -277,15 +279,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
+                await AuthService.instance.logout();
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Logout functionality will be connected later.',
-                    ),
+                if (!mounted) return;
+
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const LoginScreen(),
                   ),
+                  (_) => false,
                 );
               },
               child: const Text(

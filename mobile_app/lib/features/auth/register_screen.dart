@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_card.dart';
@@ -45,11 +47,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isLoading = true;
     });
 
-    // Temporary registration simulation.
-    // Backend authentication will be connected later.
-    await Future.delayed(
-      const Duration(seconds: 1),
-    );
+    try {
+      await AuthService.instance.register(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to connect to the server')),
+      );
+      return;
+    }
 
     if (!mounted) return;
 
@@ -126,8 +148,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return 'Please enter a password';
     }
 
-    if (value.length < 6) {
-      return 'Password must contain at least 6 characters';
+    if (value.length < 8) {
+      return 'Password must contain at least 8 characters';
     }
 
     return null;

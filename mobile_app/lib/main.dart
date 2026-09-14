@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/services/auth_service.dart';
 import 'core/services/trip_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/splash_screen.dart';
@@ -7,7 +8,7 @@ import 'features/auth/splash_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Restore the saved trip before the app starts.
+  await AuthService.instance.initialize();
   await TripService.instance.initialize();
 
   runApp(const MyApp());
