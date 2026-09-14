@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
 
-    if (!AuthService.instance.isLoggedIn) {
+    if (!AuthService.instance.isAuthenticated) {
       return;
     }
 
@@ -712,3 +712,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
