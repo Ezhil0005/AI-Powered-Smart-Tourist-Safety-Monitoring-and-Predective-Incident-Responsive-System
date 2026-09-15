@@ -16,16 +16,19 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
 
+  static const LatLng _defaultCenter = LatLng(
+    11.0168,
+    76.9558,
+  );
+
   LatLng? _currentLocation;
 
   bool _loading = true;
-
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-
     _loadLocation();
   }
 
@@ -37,45 +40,49 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final position =
-          await LocationService.instance
-              .getCurrentLocation();
+          await LocationService.instance.getCurrentLocation();
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
+
+      final location = LatLng(
+        position.latitude,
+        position.longitude,
+      );
 
       setState(() {
-        _currentLocation = LatLng(
-          position.latitude,
-          position.longitude,
-        );
-
+        _currentLocation = location;
         _loading = false;
       });
+
+      // Move map after the first frame so the controller is ready.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        _mapController.move(
+          location,
+          16,
+        );
+      });
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _loading = false;
-
-        _errorMessage =
-            e.toString().replaceFirst(
-          'Exception: ',
-          '',
-        );
+        _errorMessage = e.toString().replaceFirst(
+              'Exception: ',
+              '',
+            );
       });
     }
   }
 
   void _moveToCurrentLocation() {
-    if (_currentLocation == null) {
-      return;
-    }
+    final location = _currentLocation;
+
+    if (location == null) return;
 
     _mapController.move(
-      _currentLocation!,
+      location,
       16,
     );
   }
@@ -83,31 +90,24 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          AppTheme.background,
-
+      backgroundColor: AppTheme.background,
       appBar: const AppAppBar(
         title: 'Safety Map',
         showBackButton: true,
       ),
-
       body: Stack(
         children: [
           _buildMap(),
 
-          if (_loading)
-            _buildLoading(),
+          if (_loading) _buildLoading(),
 
-          if (_errorMessage != null &&
-              !_loading)
+          if (_errorMessage != null && !_loading)
             _buildError(),
 
-          if (_currentLocation != null &&
-              !_loading)
+          if (_currentLocation != null && !_loading)
             _buildLocationCard(),
 
-          if (_currentLocation != null &&
-              !_loading)
+          if (_currentLocation != null && !_loading)
             _buildMyLocationButton(),
         ],
       ),
@@ -115,54 +115,31 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildMap() {
-    final location =
-        _currentLocation ??
-        const LatLng(
-          11.0168,
-          76.9558,
-        );
-
     return FlutterMap(
-      mapController:
-          _mapController,
-
-      options:
-          MapOptions(
-        initialCenter:
-            location,
-
-        initialZoom:
-            16,
-
-        minZoom:
-            3,
-
-        maxZoom:
-            19,
+      mapController: _mapController,
+      options: const MapOptions(
+        initialCenter: _defaultCenter,
+        initialZoom: 14,
+        minZoom: 3,
+        maxZoom: 19,
       ),
-
       children: [
         TileLayer(
           urlTemplate:
               'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-
-          userAgentPackageName:
-              'com.example.mobile_app',
+          userAgentPackageName: 'com.example.mobile_app',
+          maxNativeZoom: 19,
+          maxZoom: 19,
         ),
 
         if (_currentLocation != null)
           MarkerLayer(
             markers: [
               Marker(
-                point:
-                    _currentLocation!,
-
+                point: _currentLocation!,
                 width: 60,
-
                 height: 60,
-
-                child:
-                    _buildLocationMarker(),
+                child: _buildLocationMarker(),
               ),
             ],
           ),
@@ -172,40 +149,23 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildLocationMarker() {
     return Container(
-      decoration:
-          BoxDecoration(
-        shape:
-            BoxShape.circle,
-
-        color:
-            AppTheme.secondary,
-
-        border:
-            Border.all(
-          color:
-              Colors.white,
-
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppTheme.secondary,
+        border: Border.all(
+          color: Colors.white,
           width: 4,
         ),
-
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.black.withValues(
-              alpha: 0.25,
-            ),
-
-            blurRadius:
-                8,
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 8,
           ),
         ],
       ),
-
-      child:
-          const Icon(
+      child: const Icon(
         Icons.person_rounded,
-        color:
-            Colors.white,
+        color: Colors.white,
         size: 28,
       ),
     );
@@ -213,39 +173,24 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildLoading() {
     return const Center(
-      child:
-          Card(
-        child:
-            Padding(
-          padding:
-              EdgeInsets.symmetric(
+      child: Card(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
             horizontal: 22,
             vertical: 18,
           ),
-
-          child:
-              Row(
-            mainAxisSize:
-                MainAxisSize.min,
-
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
                 width: 22,
                 height: 22,
-
-                child:
-                    CircularProgressIndicator(
+                child: CircularProgressIndicator(
                   strokeWidth: 2.5,
                 ),
               ),
-
-              SizedBox(
-                width: 14,
-              ),
-
-              Text(
-                'Getting location...',
-              ),
+              SizedBox(width: 14),
+              Text('Getting location...'),
             ],
           ),
         ),
@@ -255,99 +200,45 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildError() {
     return Center(
-      child:
-          Container(
-        margin:
-            const EdgeInsets.all(24),
-
-        padding:
-            const EdgeInsets.all(20),
-
-        decoration:
-            BoxDecoration(
-          color:
-              AppTheme.surface,
-
-          borderRadius:
-              BorderRadius.circular(
-            18,
-          ),
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(18),
         ),
-
-        child:
-            Column(
-          mainAxisSize:
-              MainAxisSize.min,
-
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
               Icons.location_off_rounded,
-
-              color:
-                  AppTheme.sos,
-
-              size:
-                  45,
+              color: AppTheme.sos,
+              size: 45,
             ),
-
-            const SizedBox(
-              height: 12,
-            ),
-
+            const SizedBox(height: 12),
             const Text(
               'Unable to get location',
-
-              style:
-                  TextStyle(
-                color:
-                    AppTheme.textPrimary,
-
-                fontSize:
-                    17,
-
-                fontWeight:
-                    FontWeight.w800,
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
               ),
             ),
-
-            const SizedBox(
-              height: 8,
-            ),
-
+            const SizedBox(height: 8),
             Text(
               _errorMessage ??
                   'Please check GPS permission.',
-
-              textAlign:
-                  TextAlign.center,
-
-              style:
-                  const TextStyle(
-                color:
-                    AppTheme.textMuted,
-
-                fontSize:
-                    12,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 12,
               ),
             ),
-
-            const SizedBox(
-              height: 16,
-            ),
-
+            const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed:
-                  _loadLocation,
-
-              icon:
-                  const Icon(
-                Icons.refresh_rounded,
-              ),
-
-              label:
-                  const Text(
-                'Try Again',
-              ),
+              onPressed: _loadLocation,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Try Again'),
             ),
           ],
         ),
@@ -356,129 +247,62 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildLocationCard() {
-    final location =
-        _currentLocation!;
+    final location = _currentLocation!;
 
     return Positioned(
-      top:
-          16,
-
-      left:
-          16,
-
-      right:
-          16,
-
-      child:
-          Container(
-        padding:
-            const EdgeInsets.all(14),
-
-        decoration:
-            BoxDecoration(
-          color:
-              AppTheme.surface,
-
-          borderRadius:
-              BorderRadius.circular(
-            16,
-          ),
-
+      top: 16,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color:
-                  Colors.black.withValues(
-                alpha: 0.18,
-              ),
-
-              blurRadius:
-                  10,
-
-              offset:
-                  const Offset(
-                0,
-                4,
-              ),
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-
-        child:
-            Row(
+        child: Row(
           children: [
             Container(
-              width:
-                  44,
-
-              height:
-                  44,
-
-              decoration:
-                  BoxDecoration(
-                color:
-                    AppTheme.secondary
-                        .withValues(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.secondary.withValues(
                   alpha: 0.12,
                 ),
-
-                shape:
-                    BoxShape.circle,
+                shape: BoxShape.circle,
               ),
-
-              child:
-                  const Icon(
-                Icons
-                    .my_location_rounded,
-
-                color:
-                    AppTheme.secondary,
+              child: const Icon(
+                Icons.my_location_rounded,
+                color: AppTheme.secondary,
               ),
             ),
-
-            const SizedBox(
-              width:
-                  12,
-            ),
-
+            const SizedBox(width: 12),
             Expanded(
-              child:
-                  Column(
+              child: Column(
                 crossAxisAlignment:
                     CrossAxisAlignment.start,
-
                 children: [
                   const Text(
                     'Your Current Location',
-
-                    style:
-                        TextStyle(
-                      color:
-                          AppTheme.textPrimary,
-
-                      fontSize:
-                          14,
-
-                      fontWeight:
-                          FontWeight.w800,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-
-                  const SizedBox(
-                    height:
-                        4,
-                  ),
-
+                  const SizedBox(height: 4),
                   Text(
                     '${location.latitude.toStringAsFixed(6)}, '
                     '${location.longitude.toStringAsFixed(6)}',
-
-                    style:
-                        const TextStyle(
-                      color:
-                          AppTheme.textMuted,
-
-                      fontSize:
-                          11,
+                    style: const TextStyle(
+                      color: AppTheme.textMuted,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -492,29 +316,15 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildMyLocationButton() {
     return Positioned(
-      right:
-          16,
-
-      bottom:
-          25,
-
-      child:
-          FloatingActionButton(
-        heroTag:
-            'my_location_button',
-
-        onPressed:
-            _moveToCurrentLocation,
-
-        backgroundColor:
-            AppTheme.secondary,
-
-        child:
-            const Icon(
+      right: 16,
+      bottom: 25,
+      child: FloatingActionButton(
+        heroTag: 'my_location_button',
+        onPressed: _moveToCurrentLocation,
+        backgroundColor: AppTheme.secondary,
+        child: const Icon(
           Icons.my_location_rounded,
-
-          color:
-              Colors.white,
+          color: Colors.white,
         ),
       ),
     );

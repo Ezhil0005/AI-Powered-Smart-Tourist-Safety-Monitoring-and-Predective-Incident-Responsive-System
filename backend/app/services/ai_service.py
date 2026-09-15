@@ -1,12 +1,8 @@
-import os
-
 import httpx
 
 
-AI_SERVICE_URL = os.getenv(
-    "AI_SERVICE_URL",
-    "http://127.0.0.1:8001",
-)
+# AI microservice runs on port 8002
+AI_SERVICE_URL = "http://127.0.0.1:8002"
 
 
 class AIServiceError(Exception):

@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Internet access for FastAPI backend -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Location permissions for GPS -->
     <uses-permission
         android:name="android.permission.ACCESS_FINE_LOCATION" />
